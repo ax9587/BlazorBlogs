@@ -1,0 +1,98 @@
+﻿@page "/rolepermissions/{Id}"
+@inject BlazorBlog.Client.Service.IUserRolesService UserRolesService;
+@using BlazorBlog.Client.ViewModel;
+@using BlazorBlog.Shared.Dtos;
+@using BlazorBlog.Shared.Models;
+
+@if (permissions == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h3>Manage Permissionss for Role: @model.RoleName</h3>
+    <EditForm Model="@model" OnValidSubmit="SaveRolePermission">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Permission</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in model.RolePermissions)
+            {
+                <tr>
+                    <td>@item.PermissionName</td>
+                    <td><InputCheckbox id="IsSelected" @bind-Value=item.Selected class="form-check" /></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+        <button type="submit" class="btn btn-primary">Save</button>
+     </EditForm>
+}
+
+@code {
+    private List<Permission> permissions;
+    private List<RolePermissionDto> rolepermissions;
+    private RoleInfoDto role;
+    private ManageRolePermissionsViewModel model;
+
+    [Parameter]
+    public string Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        permissions = await UserRolesService.GetPermissions();
+        rolepermissions = await UserRolesService.GetRolePermissions(int.Parse(Id));
+        role = await UserRolesService.GetRoleInfo(int.Parse(Id));
+
+        var viewModel = new List<RolePermissionsViewModel>();
+        foreach (var permission in permissions)
+        {
+            var rolePermissionsViewModel = new RolePermissionsViewModel
+                {
+                    PermissionId = permission.Id,
+                    PermissionName = permission.Name
+                };
+            if (rolepermissions.Exists(x => x.PermissionId == permission.Id))
+            {
+                rolePermissionsViewModel.Selected = true;
+            }
+            else
+            {
+                rolePermissionsViewModel.Selected = false;
+            }
+            viewModel.Add(rolePermissionsViewModel);
+        }
+        model = new ManageRolePermissionsViewModel()
+            {
+                RoleId = int.Parse(Id),
+                RoleName = role.Name,
+                RolePermissions = viewModel
+            };
+    }
+    async Task SaveRolePermission()
+    {
+        UpdateRolePermissionDto rolepermissions = new UpdateRolePermissionDto();
+        rolepermissions.RoleId = model.RoleId;
+        var rolepermissionlist = new List<RolePermissionDto>();
+        foreach (var permission in model.RolePermissions)
+        {
+            if (permission.Selected)
+            {
+                var rolepermission = new RolePermissionDto
+                {
+                        RoleId = model.RoleId,
+                        PermissionId=permission.PermissionId
+                };
+                rolepermissionlist.Add(rolepermission);
+            }
+        }
+        rolepermissions.RolePermissions = rolepermissionlist;
+
+        var response = await UserRolesService.UpdateRolePermissions(rolepermissions);
+
+    }
+}

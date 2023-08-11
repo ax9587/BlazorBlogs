@@ -1,0 +1,23 @@
+﻿@page "/posts/{url}"
+@using BlazorBlog.Shared.Dtos;
+@inject BlazorBlog.Client.Service.IBlogService BlogService;
+@if(@post==null){
+    <span>Loading ....</span>
+}else{
+    <img src="@post.Image" />
+<h3>@post.Title</h3>
+}
+
+
+@code {
+    private BlogPostDto post;
+
+    [Parameter]
+    public string url { get; set; }
+
+    //protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
+    {
+        post = await BlogService.GetBlogPost(url);
+    }
+}

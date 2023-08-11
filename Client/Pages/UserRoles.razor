@@ -1,0 +1,99 @@
+﻿@page "/userroles/{Id}"
+@inject BlazorBlog.Client.Service.IUserRolesService UserRolesService;
+@using BlazorBlog.Client.ViewModel;
+@using BlazorBlog.Shared.Dtos;
+
+@if (roles == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h3>Manage Roles for User: @model.UserName</h3>
+    <EditForm Model="@model" OnValidSubmit="SaveUserRole">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Role</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in model.UserRoles)
+            {
+                <tr>
+                    <td>@item.RoleName</td>
+                    <td><InputCheckbox id="IsSelected" @bind-Value=item.Selected class="form-check" /></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+        <button type="submit" class="btn btn-primary">Save</button>
+     </EditForm>
+}
+
+@code {
+    private List<RoleDto> roles;
+    private List<UserRoleDto> userroles;
+    private UserInfoDto user;
+    private ManageUserRolesViewModel model;
+
+    [Parameter]
+    public string Id { get; set; }
+
+    //protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
+    {
+        roles = await UserRolesService.GetRoles();
+        userroles = await UserRolesService.GetUserRoles(int.Parse(Id));
+        user = await UserRolesService.GetUserInfo(int.Parse(Id));
+
+        var viewModel = new List<UserRolesViewModel>();
+        foreach (var role in roles)
+        {
+            var userRolesViewModel = new UserRolesViewModel
+                {
+                    RoleId = role.Id,
+                     RoleName = role.Name
+                };
+            if (userroles.Exists(x=>x.RoleId==role.Id))
+            {
+                userRolesViewModel.Selected = true;
+            }
+            else
+            {
+                userRolesViewModel.Selected = false;
+            }
+            viewModel.Add(userRolesViewModel);
+        }
+        model = new ManageUserRolesViewModel()
+            {
+                UserId = int.Parse(Id),
+                UserName = user.Name,
+                UserRoles = viewModel
+            };
+    }
+    async Task SaveUserRole()
+    {
+        //Console.WriteLine("Save User Role.");
+        UpdateUserRoleDto userroles = new UpdateUserRoleDto();
+        userroles.UserId = model.UserId;
+        var userrolelist = new List<UserRoleDto>();
+        foreach (var role in model.UserRoles)
+        {
+            if (role.Selected)
+            {
+                var userrole = new UserRoleDto
+                {
+                        UserId = model.UserId,
+                        RoleId=role.RoleId
+                };
+                userrolelist.Add(userrole);
+            }
+        }
+        userroles.UserRoles = userrolelist;
+
+        var response = await UserRolesService.UpdateUserRoles(userroles);
+
+    }
+}

@@ -1,0 +1,98 @@
+﻿@page "/usercategories/{Id}"
+@inject BlazorBlog.Client.Service.IUserRolesService UserRolesService;
+@using BlazorBlog.Client.ViewModel;
+@using BlazorBlog.Shared.Dtos;
+@using BlazorBlog.Shared.Models;
+
+@if (categories == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h3>Manage Categoryss for user: @model.UserName</h3>
+    <EditForm Model="@model" OnValidSubmit="SaveUserCategory">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in model.UserCategories)
+            {
+                <tr>
+                    <td>@item.CategoryName</td>
+                    <td><InputCheckbox id="IsSelected" @bind-Value=item.Selected class="form-check" /></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+        <button type="submit" class="btn btn-primary">Save</button>
+     </EditForm>
+}
+
+@code {
+    private List<CategoryDto> categories;
+    private List<UserCategoryDto> userCategories;
+    private UserInfoDto user;
+    private ManageUserCategoryViewModel model;
+
+    [Parameter]
+    public string Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = await UserRolesService.GetCategories();
+        userCategories = await UserRolesService.GetUserCategories(int.Parse(Id));
+        user = await UserRolesService.GetUserInfo(int.Parse(Id));
+
+        var viewModel = new List<UserCategoryViewModel>();
+        foreach (var Category in categories)
+        {
+            var userCategoryViewModel = new UserCategoryViewModel
+                {
+                    CategoryId = Category.Id,
+                    CategoryName = Category.Name
+                };
+            if (userCategories.Exists(x => x.CategoryId == Category.Id))
+            {
+                userCategoryViewModel.Selected = true;
+            }
+            else
+            {
+                userCategoryViewModel.Selected = false;
+            }
+            viewModel.Add(userCategoryViewModel);
+        }
+        model = new ManageUserCategoryViewModel()
+            {
+                UserId = int.Parse(Id),
+                UserName = user.Name,
+                UserCategories = viewModel
+            };
+    }
+    async Task SaveUserCategory()
+    {
+        UpdateUserCategoryDto userCategorys = new UpdateUserCategoryDto();
+        userCategorys.UserId = model.UserId;
+        var userCategorylist = new List<UserCategoryDto>();
+        foreach (var Category in model.UserCategories)
+        {
+            if (Category.Selected)
+            {
+                var userCategory = new UserCategoryDto
+                {
+                        UserId = model.UserId,
+                        CategoryId=Category.CategoryId
+                };
+                userCategorylist.Add(userCategory);
+            }
+        }
+        userCategorys.UserCategories = userCategorylist;
+
+        var response = await UserRolesService.UpdateUserCategories(userCategorys);
+
+    }
+}

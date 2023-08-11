@@ -1,0 +1,42 @@
+﻿@page "/roles"
+@using BlazorBlog.Shared.Models;
+@using BlazorBlog.Shared.Dtos;
+@inject BlazorBlog.Client.Service.IUserRolesService UserRolesService;
+
+<h1>Role List</h1>
+
+
+@if (roles == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Role</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var role in roles)
+            {
+                <tr>
+                    <td>@role.Name</td>
+                    <td> <button class="btn btn-warning">Modify</button><a href="/rolepermissions/@role.Id" class="btn btn-primary">Manage Permissions</a><button class="btn btn-danger">Delete</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<RoleDto> roles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        roles = await UserRolesService.GetRoles();
+    }
+
+}

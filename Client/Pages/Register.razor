@@ -1,0 +1,53 @@
+﻿@page "/Identity/Account/Register"
+@using BlazorBlog.Shared.Dtos;
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NaviManager
+
+
+<EditForm Model="user" OnSubmit="HandleLogin">
+    <h4>Register a local account</h4>
+    <hr>
+    <ValidationSummary />
+    <div class="form-group">
+        <label for="email">Email</label>
+        <InputText id="email" @bind-Value="user.Email" class="form-control" />
+        <ValidationMessage For="@(()=>user.Email)" />
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <InputText id="password" @bind-Value="user.Password" type="password" class="form-control" />
+        <ValidationMessage For="@(()=>user.Password)" />
+    </div>
+    <div class="form-group">
+        <label for="ConfirmPassword">Confirm Password</label>
+        <InputText id="ConfirmPassword" @bind-Value="user.ConfirmPassword" type="password" class="form-control" />
+        <ValidationMessage For="@(()=>user.ConfirmPassword)" />
+    </div>
+    <div class="form-group">
+        <div class="checkbox">
+            <label for="Input_RememberMe">
+                <input type="checkbox" data-val="true" data-val-required="The Remember me? field is required." id="Input_RememberMe" name="Input.RememberMe" value="true">
+                Remember me?
+            </label>
+        </div>
+    </div>
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</EditForm>
+
+@code {
+    UserRegisterRequest user = new UserRegisterRequest();
+
+    async Task HandleLogin()
+    {
+        var result = await Http.PostAsJsonAsync("api/auth/register", user);
+        var token = await result.Content.ReadAsStringAsync();
+        Console.WriteLine(token);
+        //await LocalStorage.SetItemAsync("token", token);
+        //await AuthStateProvider.GetAuthenticationStateAsync();
+        NaviManager.NavigateTo($"/");
+    }
+}

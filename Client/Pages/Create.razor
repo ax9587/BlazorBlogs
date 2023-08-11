@@ -1,0 +1,61 @@
+﻿@page "/create"
+@attribute [Authorize]
+@inject BlazorBlog.Client.Service.IBlogService BlogService
+@inject NavigationManager NaviManager
+<h3>Create a New Blog Post</h3>
+<EditForm Model="@newPost" OnValidSubmit="CreateNewPost">
+    <DataAnnotationsValidator/>
+    <div class="form-group">
+        <label for="title">Title</label>
+        <InputText id="title" @bind-Value="newPost.Title" class="form-control"/>
+        <ValidationMessage For="@(()=>newPost.Title)"/>
+    </div>
+    <div class="form-group">
+        <label for="url">Url</label>
+        <InputText id="url" @bind-Value="newPost.Url" class="form-control" />
+        <ValidationMessage For="@(()=>newPost.Url)" />
+    </div>
+    <div class="form-control-file">
+        <label for="image">Image</label>
+        <InputFile id="image" OnChange="OnFileChange" />
+    </div>
+    <div class="form-group">
+        <label for="Description">Description</label>
+        <InputText id="Description" @bind-Value="newPost.Description" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label for="Content">Content</label>
+        <InputTextArea id="Content" @bind-Value="newPost.Content" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label for="Content">Date Created</label>
+        <InputDate id="Content" @bind-Value="newPost.DateCreated" class="form-control" />
+    </div>
+    <div class="form-group">
+        <InputCheckbox id="IsPublished" @bind-Value="newPost.IsPublished" class="form-check" />
+        <label for="IsPublished">Published</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Create</button>
+    <ValidationSummary/>
+</EditForm>
+
+@code {
+    BlazorBlog.Shared.BlogPost newPost = new BlazorBlog.Shared.BlogPost();
+
+    //void CreateNewPost()
+    async Task CreateNewPost()
+    {
+        //Console.WriteLine("Create new blog post");
+        var result=await BlogService.CreatePost(newPost);
+        NaviManager.NavigateTo($"posts/{result.Url}");
+    }
+    async Task OnFileChange(InputFileChangeEventArgs e)
+    {
+        var format = "image/png";
+        var resizedImage = await e.File.RequestImageFileAsync(format, 300, 300);
+        var buffer = new byte[resizedImage.Size];
+        await resizedImage.OpenReadStream().ReadAsync(buffer);
+        var imageData = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+        newPost.Image = imageData;
+    }
+}
